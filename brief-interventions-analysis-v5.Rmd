@@ -1,7 +1,7 @@
 ---
 title: "Brief-interventions"
 author: "Vera Buss"
-date: "2023-03-31"
+date: "2023-07-05"
 output: html_document
 ---
 
@@ -28,9 +28,6 @@ library(gridExtra)
 ```{r, include = FALSE}
 # get data
 sts <- readRDS("C://Users//rmjlvbu//OneDrive - University College London/Documents/STS/Brief-interventions/sts.RDS") 
-# remove @ from the beginning of some variables, such as weight
-#sts <- clean_names(sts)
-names(sts)[names(sts)=="@weight0"] <- "weight0" 
 ```
 
 # Prepare dataset for analysis
@@ -56,54 +53,16 @@ length(unique(df_all$xwave))
 
 # check for missing values
 ```{r, include=TRUE}
-## create dataset that only includes relevant variables
-df_complete <- df_all %>% select("agez", "sexz", "gore", "sgz", "weight_gb", "weight_scotland", "weight0", "weight_wales", "smokly", "highriskauditc", "auditc", "sturge", "alcbi2a", "alcbi21", "alcbi22", "alcbi23", "alcbi24", "alcbi25", "alcbi26", "alcbi27", "alcbi28", "alcbi29", "q632x4a1", "q632x4a2", "q632x4a3", "q632x4a4", "q632x4a5", "q632x4a6", "q632x4a7", "q632x4a8", "q632x4a9", "q632x4a10", "dethnin")
+# create dataset that only includes relevant variables
+df_complete <- df_all %>% select("agez", "sexz", "gore", "sgz", "dethnin", "weight_gb", "smoker", "smokly", "highriskauditc", "auditc", "sturge", "alcbi2a",
+                                 "alcbi21", "alcbi22", "alcbi23", "alcbi24", "alcbi25", "alcbi26", "alcbi27", "alcbi28", "alcbi29", "q632x4a1",
+                                 "q632x4a2", "q632x4a3", "q632x4a4", "q632x4a5", "q632x4a6", "q632x4a7", "q632x4a8", "q632x4a9", "q632x4a10")
+
 ## adjust urges to smoke variable so that non-smokers are included as "no smoker" instead of NA
 df_complete$sturge <- ifelse(df_complete$smokly == 0, "no smoker", df_complete$sturge)
-## create one variable for alcohol brief interventions, stating "no drinker" for those with audit-c under 5 and else provided response
-df_complete$alcbi <- ifelse(df_complete$highriskauditc==0, "no drinker",
-                             ifelse(df_complete$highriskauditc==1 & df_complete$alcbi21==1, 1,
-                                    ifelse(df_complete$highriskauditc==1 & df_complete$alcbi22==1, 2,
-                                           ifelse(df_complete$highriskauditc==1 & df_complete$alcbi23==1, 3,
-                                                  ifelse(df_complete$highriskauditc==1 & df_complete$alcbi24==1, 4,
-                                                         ifelse(df_complete$highriskauditc==1 & df_complete$alcbi25==1, 5,
-                                                                ifelse(df_complete$highriskauditc==1 & df_complete$alcbi26==1, 6,
-                                                                       ifelse(df_complete$highriskauditc==1 & df_complete$alcbi28==1, 8, 
-                                                                              ifelse((df_complete$highriskauditc==1 & df_complete$alcbi27==1) 
-                                                                                     | (df_complete$highriskauditc==1 & df_complete$alcbi2a==3) , 7, NA)))))))))
-## create variable indicating whether an increasing or higher risk drinker has seen GP in past year, with following categories: "no drinker", "no", "yes"
-df_complete$alc_gp <- ifelse(df_complete$alcbi=="no drinker", "no drinker",
-                             ifelse(df_complete$alcbi==1, "no",
-                                    ifelse(df_complete$alcbi %in% c(2,3,4,5,6), "yes", NA)))
-## create new alcohol brief intervention variable with the following categories: "no drinker", "not seen GP", "no advice" or "advice"
-df_complete$alc_bi <- ifelse(df_complete$alcbi=="no drinker", "no drinker",
-                             ifelse(df_complete$alcbi==1, "not seen GP",
-                                    ifelse(df_complete$alcbi %in% c(2,3), "no advice",
-                                           ifelse(df_complete$alcbi %in% c(4,5,6), "advice", NA))))
-## create one variable for smoking brief interventions, stating "no smoker" for those who have not smoked in past year and else provided response
-df_complete$smokbi <- ifelse(df_complete$smokly==0, "no smoker",
-                             ifelse(df_complete$smokly==1 & df_complete$q632x4a1==1, 1,
-                                    ifelse(df_complete$smokly==1 & df_complete$q632x4a2==1, 2,
-                                           ifelse(df_complete$smokly==1 & df_complete$q632x4a3==1, 3,
-                                                  ifelse(df_complete$smokly==1 & df_complete$q632x4a4==1, 4,
-                                                         ifelse(df_complete$smokly==1 & df_complete$q632x4a5==1, 5,
-                                                               ifelse(df_complete$smokly==1 & df_complete$q632x4a6==1, 6,
-                                                                      ifelse(df_complete$smokly==1 & df_complete$q632x4a7==1, 7, 
-                                                                            ifelse(df_complete$smokly==1 & df_complete$q632x4a10==1, 10, NA)))))))))
-## create variable indicating whether a past-year smoker has seen GP in past year, with following categories: "no smoker", "no", "yes"
-df_complete$smok_gp <- ifelse(df_complete$smokbi=="no smoker", "no smoker",
-                             ifelse(df_complete$smokbi==7, "no",
-                                    ifelse(df_complete$smokbi %in% c(1,2,3,4,5,6,10), "yes", NA)))
-## create new smoking brief intervention variable with the following categories: "no smoker", "not seen GP", "no advice" or "advice"
-df_complete$smok_bi <- ifelse(df_complete$smokbi=="no smoker", "no smoker",
-                             ifelse(df_complete$smokbi==7, "not seen GP",
-                                    ifelse(df_complete$smokbi %in% c(5,6), "no advice",
-                                           ifelse(df_complete$smokbi %in% c(1,2,3,4,10), "advice", NA))))
 
 ## if someone refused answer ("7") for age, set NA
 df_complete$agez <- ifelse(df_complete$agez == 7, NA, df_complete$agez)
-
-
 
 # Check for missing values and impute if more than 5% of relevant variables missing
 # function to compute percent of missing  values for various variables
@@ -134,42 +93,182 @@ sum(is.na(df_complete$dethnin))
 sum(is.na(df_complete$highriskauditc))
 ## missing for smoking status
 sum(is.na(df_complete$smokly))
-## missing for alcohol brief intervention
-### remove data for those without data for AUDIT-C
-missing_alc <- df_complete %>% filter(!is.na(highriskauditc))
-### number of participants who are increasing or higher risk drinkers
-nrow(missing_alc[missing_alc$highriskauditc == 1,])
-### number of increasing or higher risk drinkers without data on brief intervention
-sum(is.na(missing_alc$alc_bi))
-### proportion of increasing or higher risk drinkers with data on brief intervention
-sum(is.na(missing_alc$alc_bi))/nrow(missing_alc[missing_alc$highriskauditc == 1,])*100
-## missing for smoking brief intervention
+## missing for urge to smoke
 ### remove data for those without data for smoking status
 missing_smok <- df_complete %>% filter(! is.na(smokly))
-### number of participants who are increasing or higher risk drinkers
-nrow(missing_smok[missing_smok$smokly == 1,])
-### number of increasing or higher risk drinkers with data on brief intervention
-sum(is.na(missing_smok$smok_bi))
-sum(is.na(missing_smok$smok_bi))/length(which(missing_smok$smokly == 1))*100
-## missing for urge to smoke
+## set urges to 99 if not past-year smoker
 missing_smok$sturge <- ifelse(missing_smok$smokly == "0", "99", missing_smok$sturge)
+### number and percent missing
 sum(is.na(missing_smok$sturge))
 sum(is.na(missing_smok$sturge))/length(which(missing_smok$smokly == 1))*100
+
+# change variables from haven format to normal factor
+for(var in 1:ncol(df_complete)) {
+  if(class(df_complete[[var]])[1] == "haven_labelled") {
+    df_complete[[var]] <- haven::as_factor(df_complete[[var]])
+  }
+}
+```
+
+# create variables for alcohol brief interventions
+```{r, include=TRUE}
+# intervention provided for drinking
+## answer option 1
+attributes(df_complete$alcbi21) # No, I have not seen a doctor or health worker within my GP surgery
+## answer option 2
+attributes(df_complete$alcbi22) # No, I have seen a doctor or health worker within my GP surgery but did not discuss my drinking 
+## answer option 3
+attributes(df_complete$alcbi23) # Yes, a doctor or other health worker within my GP surgery asked about my drinking
+## answer option 4
+attributes(df_complete$alcbi24) # Yes, a doctor or other health worker within my GP surgery offered advice about cutting down on my drinking
+## answer option 5
+attributes(df_complete$alcbi25) # Yes, a doctor or other health worker within my GP surgery offered help or support within the surgery to help me cut down
+## answer option 6
+attributes(df_complete$alcbi26) # Yes, a doctor or other health worker within my GP surgery referred me to an alcohol service or advised me to seek specialist help 
+## answer option 7
+attributes(df_complete$alcbi27) # Don't know
+## answer option 8
+attributes(df_complete$alcbi28) # Refused
+## answer option 9
+attributes(df_complete$alcbi29) # No
+## when selected option 9, follow up question
+attributes(df_complete$alcbi2a)
+### [1] "I have not seen a doctor or health worker within my GP surgery in last 12 months."                               
+### [2] "I have seen a doctor or health worker within my GP surgery in the last 12 months but did not discuss my drinking"
+### [3] "Don't know" 
+
+
+# initiate column for alcohol brief intervention with only zeros
+df_complete$alcbi <- 0
+# set for all who are not increasing or higher risk drinkers to "no drinker"
+df_complete$alcbi <- ifelse(df_complete$highriskauditc==0, "no drinker", df_complete$alcbi)
+# set for all who replied "Don't know" to NA
+df_complete$alcbi <- ifelse(df_complete$highriskauditc==1 & df_complete$alcbi27=="Don't know", NA, df_complete$alcbi)
+# set for all who refused to NA
+df_complete$alcbi <- ifelse(df_complete$highriskauditc==1 & df_complete$alcbi28=="Refused", NA, df_complete$alcbi)
+# set for all who replied first no (option 9) and then "Don't know" to NA
+df_complete$alcbi <- ifelse(df_complete$highriskauditc==1 & df_complete$alcbi2a=="Don't know", NA, df_complete$alcbi)
+
+# set for all who set no (option 1) to "not seen GP"
+df_complete$alcbi <- ifelse(df_complete$highriskauditc==1 & df_complete$alcbi21=="No, I have not seen a doctor or health worker within my GP surgery",
+                            "not seen GP", df_complete$alcbi)
+# set for all who replied first no (option 9) and then that they have not seen GP to "not seen GP"
+df_complete$alcbi <- ifelse(df_complete$highriskauditc==1 & df_complete$alcbi2a==
+                              "I have not seen a doctor or health worker within my GP surgery in last 12 months.", "not seen GP",
+                            df_complete$alcbi)
+# set for all who set no (option 2) to "no BI"
+df_complete$alcbi <- ifelse(df_complete$highriskauditc==1 & df_complete$alcbi22==
+                              "No, I have seen a doctor or health worker within my GP surgery but did not discuss my drinking",
+                            "no BI", df_complete$alcbi)
+# set for all who replied first no (option 9) and then that they have not received advice to "no BI"
+df_complete$alcbi <- ifelse(df_complete$highriskauditc==1 & df_complete$alcbi2a==
+                              "I have seen a doctor or health worker within my GP surgery in the last 12 months but did not discuss my drinking", 
+                            "no BI", df_complete$alcbi)
+# set for all who replied yes to option 4, 5, or 6 to "BI"
+df_complete$alcbi <- ifelse(df_complete$highriskauditc==1 & 
+                              (df_complete$alcbi24=="Yes, a doctor or other health worker within my GP surgery offered advice about cutting down on my" |
+                              df_complete$alcbi25=="Yes, a doctor or other health worker within my GP surgery offered help or support within the" |
+                              df_complete$alcbi26=="Yes, a doctor or other health worker within my GP surgery referred me to an alcohol service or"), 
+                            "BI", df_complete$alcbi)
+## show cross-table with answer option 3 (Yes, a doctor or other health worker within my GP surgery asked about my drinking)
+table(df_complete$alcbi, df_complete$alcbi23)
+# set for all who replied yes to option 3 but did not say yes to option 4, 5, or 6 to "no BI"
+df_complete$alcbi <- ifelse(df_complete$highriskauditc==1 &
+                              (df_complete$alcbi23=="Yes, a doctor or other health worker within my GP surgery asked about my drinking" &
+                                 !(df_complete$alcbi24=="Yes, a doctor or other health worker within my GP surgery offered advice about cutting down on my") &
+                                 !(df_complete$alcbi25=="Yes, a doctor or other health worker within my GP surgery offered help or support within the") &
+                                 !(df_complete$alcbi26=="Yes, a doctor or other health worker within my GP surgery referred me to an alcohol service or")),
+                            "no BI", df_complete$alcbi)
+
+## show table with new variable
+table(df_complete$alcbi)
+
+
+## missing values
+sum(is.na(df_complete$alcbi))
+missing_drink <- df_complete %>% filter(highriskauditc==1)
+sum(is.na(missing_drink$alcbi))
+```
+
+# create variables for smoking brief interventions
+```{r, include=TRUE}
+# interventions provided for smoking
+## answer option 1
+attributes(df_complete$q632x4a1) # Yes, he/she suggested that I go to a specialist stop smoking advisor or group
+## answer option 2
+attributes(df_complete$q632x4a2) # Yes, he/she suggested that I see a nurse in the practice
+## answer option 3
+attributes(df_complete$q632x4a3) # Yes he/she offered me a prescription for Champix, Zyban, a nicotine patch, nicotine gum or another nicotine product
+## answer option 4
+attributes(df_complete$q632x4a4) # Yes, he/she advised me to stop but did not offer anything
+## answer option 5
+attributes(df_complete$q632x4a5) # Yes, he/she asked me about my smoking but did not advise me to stop smoking
+## answer option 6
+attributes(df_complete$q632x4a6) # No, I have seen my GP in the last year but he/she has not spoken to me about smoking
+## answer option 7
+attributes(df_complete$q632x4a7) # No, I have not seen my GP in the last year
+## answer option 8
+attributes(df_complete$q632x4a8) # Don't Know/Can't remember 
+## answer option 9
+attributes(df_complete$q632x4a9) # Not stated
+## answer option 10
+attributes(df_complete$q632x4a10) # Yes, he\she suggested that I use an e-cigarette
+
+# initiate column for smoking brief intervention with only zeros
+df_complete$smokbi <- 0
+# set for all who are not past-year smokers to "no smoker"
+df_complete$smokbi <- ifelse(df_complete$smokly==0, "no smoker", df_complete$smokbi)
+# set for all who replied "Don't know/Can't remember" to NA
+df_complete$smokbi <- ifelse(df_complete$smokly==1 & df_complete$q632x4a8=="Don't Know/Can't remember", NA, df_complete$smokbi)
+# set for all who did not state to NA
+df_complete$smokbi <- ifelse(df_complete$smokly==1 & df_complete$q632x4a9=="Not stated", NA, df_complete$smokbi)
+# set for all who set no (option 7) to "not seen GP"
+df_complete$smokbi <- ifelse(df_complete$smokly==1 & df_complete$q632x4a7=="No, I have not seen my GP in the last year",
+                             "not seen GP", df_complete$smokbi)
+# set for all who set no (option 6) to "no BI"
+df_complete$smokbi <- ifelse(df_complete$smokly==1 & df_complete$q632x4a6=="No, I have seen my GP in the last year but he/she has not sp",
+                             "no BI", df_complete$smokbi)
+# set for all who replied yes to option 1, 2, 3, 4, or 10 to "BI"
+df_complete$smokbi <- ifelse(df_complete$smokly==1 &
+                               (df_complete$q632x4a1=="Yes, he/she suggested that I go to a specialist stop smoking" |
+                                  df_complete$q632x4a2== "Yes, he/she suggested that I see a nurse in the practice" |
+                                  df_complete$q632x4a3=="Yes, he/she offered me a prescription for Champix, Zyban, a" |
+                                  df_complete$q632x4a4=="Yes, he/she advised me to stop but did not offer anything" |
+                                  df_complete$q632x4a10=="Yes, he\\she suggested that I use an e-cigarette"),
+                             "BI", df_complete$smokbi)
+## show cross-table with answer option 5 (No, I have seen my GP in the last year but he/she has not spoken to me about smoking)
+table(df_complete$smokbi, df_complete$q632x4a5)
+# set for all who replied yes to option 5 but did not say yes to option 1, 2, 3, 4, or 10 to "no BI"
+df_complete$smokbi <- ifelse(df_complete$smokly==1 &
+                              (df_complete$q632x4a5=="Yes, he/she asked me about my smoking but did not advise me" &
+                                 !(df_complete$q632x4a1=="Yes, he/she suggested that I go to a specialist stop smoking") &
+                                  !(df_complete$q632x4a2== "Yes, he/she suggested that I see a nurse in the practice") &
+                                  !(df_complete$q632x4a3=="Yes, he/she offered me a prescription for Champix, Zyban, a") &
+                                  !(df_complete$q632x4a4=="Yes, he/she advised me to stop but did not offer anything") &
+                                  !(df_complete$q632x4a10=="Yes, he\\she suggested that I use an e-cigarette")),
+                            "no BI", df_complete$smokbi)
+## show cross-table with answer option 5 (No, I have seen my GP in the last year but he/she has not spoken to me about smoking)
+table(df_complete$smokbi, df_complete$q632x4a5)
+
+## show table with new variable
+table(df_complete$smokbi)
+
+
+## missing values
+sum(is.na(df_complete$smokbi))
+missing_smok <- df_complete %>% filter(smokly==1) 
+sum(is.na(missing_smok$smokbi))
 ```
 
 # reduce dataset to only complete cases
 ```{r, include=TRUE}
 ## create new dataset that only includes complete cases
-complete_cases <- df_complete %>% select(-c("alcbi2a", "alcbi21", "alcbi22", "alcbi23", "alcbi24", "alcbi25", "alcbi26", "alcbi27", "alcbi28", "alcbi29", "q632x4a1", "q632x4a2", "q632x4a3", "q632x4a4", "q632x4a5", "q632x4a6", "q632x4a7", "q632x4a8", "q632x4a9", "q632x4a10"))
-complete_cases <- complete_cases[complete.cases(complete_cases),]
+complete_cases <- df_complete[complete.cases(df_complete[,c("agez", "sexz", "gore", "sgz", "dethnin", "weight_gb", "smokly", "highriskauditc", "auditc", "sturge", "alcbi", "smokbi")]),]
+
 ## number of participants with complete data
 nrow(complete_cases)
-## change variable classes (necessary because dataset originally stored in SPSS format)
-complete_cases[,c("sgz", "agez", "sturge", "sexz", "gore", "dethnin")] <- as.data.frame(lapply(complete_cases[,c("sgz", "agez", "sturge", "sexz", "gore", "dethnin")], haven::as_factor))
-#complete_cases$sgz <- ordered(complete_cases$sgz, levels = c("AB", "C1", "C2", "D", "E"))
-#complete_cases$agez <- ordered(complete_cases$agez, levels = c("1", "2", "3", "4", "5", "6"), labels = c("16-24", "25-34", "35-44", "45-54", "55-64", "65+"))
-#complete_cases$sturge <- ordered(complete_cases$sturge, levels = c("0", "1", "2", "3", "4", "5"))
-complete_cases[,c("smokly", "highriskauditc", "alc_bi", "alc_gp", "smok_bi", "smok_gp")] <- lapply(complete_cases[,c("smokly", "highriskauditc", "alc_bi", "alc_gp", "smok_bi", "smok_gp")], as.factor)
+## change derived variables into factors
+complete_cases[,c("agez", "smoker", "smokly", "highriskauditc", "alcbi", "smokbi")] <- lapply(complete_cases[,c("agez", "smoker", "smokly", "highriskauditc", "alcbi", "smokbi")], as.factor)
 ```
 
 # summary stats for demographic table
@@ -179,12 +278,8 @@ complete_cases[,c("smokly", "highriskauditc", "alc_bi", "alc_gp", "smok_bi", "sm
 ## if nation not provided, automatically for Great Britain
 ## returns weighted total, proportion, and 95% confidence interval
 summary_stats <- function(df, variable, gore="GB", option = 1) {
-  lev <- ifelse(variable == "gore", 3, 
-                ifelse(variable %in% c("sgz", "alc_bi", "smok_bi", "alc_gp", "smok_gp") , 2, nlevels(df[[variable]])))
-  df_stats <- data.frame(matrix(NA, nrow = lev, ncol = 4))
-  colnames(df_stats) <- c("n", "perc", "ci_low", "ci_up")
   df$gore <- ifelse(df$gore == "Wales", "Wales",
-                    ifelse(df$gore == "Scotland", "Scotland", "England"))
+                    ifelse(df$gore == "Scotland", "Scotland", "England")) %>% as.factor()
   if(gore == "England") {
     df <- df %>% filter(gore == "England")
   }
@@ -195,32 +290,35 @@ summary_stats <- function(df, variable, gore="GB", option = 1) {
     df <- df %>% filter(gore == "Wales")
   }
   if(variable == "sgz") {
-    df$sgz <- ifelse(df$sgz == "AB" | df$sgz == "C1", "ABC1", "C2DE")
+    df$sgz <- ifelse(df$sgz == "AB" | df$sgz == "C1", "ABC1", "C2DE") %>% as.factor()
   }
-  if(variable == "alc_bi" & option == 1) {
-    df <- df %>% filter(alc_gp=="yes")
-    df$alc_bi <- ifelse(df$alc_bi == "no advice", "no", "yes")
+  if(variable == "alcbi" & option == 1) {
+    df <- df %>% filter(highriskauditc == 1)
+    df$alcbi <- ifelse(df$alcbi == "BI", "yes", "no") %>% as.factor()
   }
-  if(variable == "alc_gp") {
-    df <- df %>% filter(highriskauditc==1)
-    df$alc_gp <- ifelse(df$alc_gp == "no", "no","yes")
+  if(variable == "alcbi" & option == 2) {
+    df <- df %>% filter(alcbi %in% c("BI", "no BI"))
+    df$alcbi <- ifelse(df$alcbi == "no BI", "no", "yes") %>% as.factor()
   }
-  if(variable == "alc_bi" & option == 2) {
-    df <- df %>% filter(highriskauditc==1)
-    df$alc_bi <- ifelse(df$alc_bi == "advice", "yes", "no")
-  }  
-  if(variable == "smok_bi" & option == 1) {
-    df <- df %>% filter(smok_gp=="yes")
-    df$smok_bi <- ifelse(df$smok_bi == "no advice", "no", "yes")
+  if(variable == "alcbi" & option == 3) {
+    df <- df %>% filter(highriskauditc == 1)
+    df$alcbi <- ifelse(df$alcbi == "not seen GP", "not seen GP", "seen GP") %>% as.factor()
   }
-  if(variable == "smok_gp") {
-    df <- df %>% filter(smokly==1)
-    df$smok_gp <- ifelse(df$smok_gp == "no", "no", "yes")
+  if(variable == "smokbi" & option == 1) {
+    df <- df %>% filter(smokly == 1)
+    df$smokbi <- ifelse(df$smokbi == "BI", "yes", "no") %>% as.factor()
   }
-  if(variable == "smok_bi" & option == 2) {
-    df <- df %>% filter(smokly==1)
-    df$smok_bi <- ifelse(df$smok_bi == "advice", "yes", "no")
-  }  
+  if(variable == "smokbi" & option == 2) {
+    df <- df %>% filter(smokbi %in% c("BI", "no BI"))
+    df$smokbi <- ifelse(df$smokbi == "no BI", "no", "yes") %>% as.factor()
+  }
+  if(variable == "smokbi" & option == 3) {
+    df <- df %>% filter(smokly == 1)
+    df$smokbi <- ifelse(df$smokbi == "not seen GP", "not seen GP", "seen GP") %>% as.factor()
+  }
+  lev <- nlevels(df[[variable]])
+  df_stats <- data.frame(matrix(NA, nrow = lev, ncol = 4))
+  colnames(df_stats) <- c("n", "perc", "ci_low", "ci_up")
   svy.dat <- svydesign(ids=~1, data=df, weights=df$weight_gb)
   num <- as.data.frame((svytotal(~svy.dat$variables[[variable]], design=svy.dat, na.rm = TRUE)))
   perc <- as.data.frame(svymean(~svy.dat$variables[[variable]], design=svy.dat, na.rm = TRUE))*100
@@ -247,6 +345,8 @@ social <- summary_stats(complete_cases, "sgz")
 
 ## weighted n, % and 95%CI for smoking
 smok <- summary_stats(complete_cases, "smokly")
+## show additionally summary stats for only those who are current smokers (not including those who stopped in past year)
+summary_stats(complete_cases, "smoker")
 
 ## weighted n, % and 95%CI for drinking
 drink <- summary_stats(complete_cases, "highriskauditc")
@@ -420,7 +520,7 @@ write.table(table.s2, file = "table.s2.csv", sep = ",", quote = FALSE, row.names
 
 # summary table and graph for prevalence of different outcomes
 ```{r, include = TRUE}
-# a) Get summary statistics for prevalence of risky behaviour in Greeat Britain and three nations
+# a) Get summary statistics for prevalence of risky behaviour in Great Britain and three nations
 ## increasing or higher risk drinking in Great Britain
 drinking_gb <- summary_stats(complete_cases, "highriskauditc")
 ## increasing or higher risk drinking in England
@@ -439,58 +539,59 @@ smoking_scot <- summary_stats(complete_cases, "smokly", gore = "Scotland")
 smoking_wal <- summary_stats(complete_cases, "smokly", gore = "Wales")
 
 # b) Get summary statistics for potential receipt (i.e., eligible people who attended their GP in past year)
+table(complete_cases$alcbi)
 ## Drinkers in Great Britain
-drinking_gp_gb <- summary_stats(complete_cases, "alc_gp")
+drinking_gp_gb <- summary_stats(complete_cases, "alcbi", option = 3)
 ## Drinkers in England
-drinking_gp_eng <- summary_stats(complete_cases, "alc_gp", gore = "England")
+drinking_gp_eng <- summary_stats(complete_cases, "alcbi", gore = "England", option = 3)
 ## Drinkers in Scotland
-drinking_gp_scot <- summary_stats(complete_cases, "alc_gp", gore = "Scotland")
+drinking_gp_scot <- summary_stats(complete_cases, "alcbi", gore = "Scotland", option = 3)
 ## Drinkers in Wales
-drinking_gp_wal <- summary_stats(complete_cases, "alc_gp", gore = "Wales")
+drinking_gp_wal <- summary_stats(complete_cases, "alcbi", gore = "Wales", option = 3)
 ## Smokers in Great Britain
-smoking_gp_gb <- summary_stats(complete_cases, "smok_gp")
+smoking_gp_gb <- summary_stats(complete_cases, "smokbi", option = 3)
 ## Smokers in England
-smoking_gp_eng <- summary_stats(complete_cases, "smok_gp", gore = "England")
+smoking_gp_eng <- summary_stats(complete_cases, "smokbi", gore = "England", option = 3)
 ## Smokers in Scotland
-smoking_gp_scot <- summary_stats(complete_cases, "smok_gp", gore = "Scotland")
+smoking_gp_scot <- summary_stats(complete_cases, "smokbi", gore = "Scotland", option = 3)
 ## Smokers in Wales
-smoking_gp_wal <- summary_stats(complete_cases, "smok_gp", gore = "Wales")
+smoking_gp_wal <- summary_stats(complete_cases, "smokbi", gore = "Wales", option = 3)
 
 # c) Summary statistics for actual receipt (i.e., receipt of brief intervention among eligible people who attended their GP)
 ## Drinkers in Great Britain
-drinking_bi_gb <- summary_stats(complete_cases, "alc_bi")
+drinking_bi_gb <- summary_stats(complete_cases, "alcbi", option = 2)
 ## Drinkers in England
-drinking_bi_eng <- summary_stats(complete_cases, "alc_bi", gore = "England")
+drinking_bi_eng <- summary_stats(complete_cases, "alcbi", gore = "England", option = 2)
 ## Drinkers in Scotland
-drinking_bi_scot <- summary_stats(complete_cases, "alc_bi", gore = "Scotland")
+drinking_bi_scot <- summary_stats(complete_cases, "alcbi", gore = "Scotland", option = 2)
 ## Drinkers in Wales
-drinking_bi_wal <- summary_stats(complete_cases, "alc_bi", gore = "Wales")
+drinking_bi_wal <- summary_stats(complete_cases, "alcbi", gore = "Wales", option = 2)
 ## Smokers in Great Britain
-smoking_bi_gb <- summary_stats(complete_cases, "smok_bi")
+smoking_bi_gb <- summary_stats(complete_cases, "smokbi", option = 2)
 ## Smokers in England
-smoking_bi_eng <- summary_stats(complete_cases, "smok_bi", gore = "England")
+smoking_bi_eng <- summary_stats(complete_cases, "smokbi", gore = "England", option = 2)
 ## Smokers in Scotland
-smoking_bi_scot <- summary_stats(complete_cases, "smok_bi", gore = "Scotland")
+smoking_bi_scot <- summary_stats(complete_cases, "smokbi", gore = "Scotland", option = 2)
 ## Smokers in Wales
-smoking_bi_wal <- summary_stats(complete_cases, "smok_bi", gore = "Wales")
+smoking_bi_wal <- summary_stats(complete_cases, "smokbi", gore = "Wales", option = 2)
 
 # d) Summary statistics for actual receipt among all increasing or higher risk drinkers/past-year smokers
 ## Drinkers in Great Britain
-drinking_bi_no_gp_gb <- summary_stats(complete_cases, "alc_bi", option = 2)
+drinking_bi_no_gp_gb <- summary_stats(complete_cases, "alcbi")
 ## Drinkers in England
-drinking_bi_no_gp_eng <- summary_stats(complete_cases, "alc_bi", option = 2, gore = "England")
+drinking_bi_no_gp_eng <- summary_stats(complete_cases, "alcbi", gore = "England")
 ## Drinkers in Scotland
-drinking_bi_no_gp_scot <- summary_stats(complete_cases, "alc_bi", option = 2, gore = "Scotland")
+drinking_bi_no_gp_scot <- summary_stats(complete_cases, "alcbi", gore = "Scotland")
 ## Drinkers in Wales
-drinking_bi_no_gp_wal <- summary_stats(complete_cases, "alc_bi", option = 2, gore = "Wales")
+drinking_bi_no_gp_wal <- summary_stats(complete_cases, "alcbi", gore = "Wales")
 ## Smokers in Great Britain
-smoking_bi_no_gp_gb <- summary_stats(complete_cases, "smok_bi", option = 2)
+smoking_bi_no_gp_gb <- summary_stats(complete_cases, "smokbi")
 ## Smokers in England
-smoking_bi_no_gp_eng <- summary_stats(complete_cases, "smok_bi", option = 2, gore = "England")
+smoking_bi_no_gp_eng <- summary_stats(complete_cases, "smokbi", gore = "England")
 ## Smokers in Scotland
-smoking_bi_no_gp_scot <- summary_stats(complete_cases, "smok_bi", option = 2, gore = "Scotland")
+smoking_bi_no_gp_scot <- summary_stats(complete_cases, "smokbi", gore = "Scotland")
 ## Smokers in Wales
-smoking_bi_no_gp_wal <- summary_stats(complete_cases, "smok_bi", option = 2, gore = "Wales")
+smoking_bi_no_gp_wal <- summary_stats(complete_cases, "smokbi", gore = "Wales")
 
 # Write information to table
 table2 <- matrix(ncol=8, nrow=16)
@@ -564,8 +665,9 @@ p2
 ggsave("figure1.1.png", plot = p1, height = 7 , width = 5.5) 
 ggsave("figure1.2.png", plot = p2, height = 7 , width = 5)
 ```
-```{r, include = TRUE}
+
 # graphs for poster
+```{r, include = TRUE}
 data_plot_poster <- data_plot[-c(1,5,9,13),]
 p1 <- ggplot(data_plot_poster, aes(x=nation, y=drinker, fill = nation)) +
   scale_fill_manual(values = c("#62A1D1", "#E6007D", "#2D2E83"), 
@@ -606,6 +708,56 @@ ggsave("figure1.1.poster.png", plot = p1, height = 7 , width = 5)
 ggsave("figure1.2.poster.png", plot = p2, height = 7 , width = 5)
 
 ```
+
+# unplanned sensitivity analysis: different types of intervention provided by GP
+```{r, include=TRUE}
+# intervention provided for drinking
+## reduce dataset to those who received alcohol brief intervention
+drinker_received_bi <- complete_cases %>% filter(alcbi == "BI")
+summary_stats(drinker_received_bi, "alcbi24") # Yes, a doctor or other health worker within my GP surgery offered advice about cutting down on my drinking
+summary_stats(drinker_received_bi, "alcbi25") # Yes, a doctor or other health worker within my GP surgery offered help or support within the surgery to help me cut down
+summary_stats(drinker_received_bi, "alcbi26") # Yes, a doctor or other health worker within my GP surgery referred me to an alcohol service or advised me to seek specialist help 
+## how many people got more than one type of support
+drinker_received_bi$advice <- ifelse(drinker_received_bi$alcbi24==
+                                       "Yes, a doctor or other health worker within my GP surgery offered advice about cutting down on my", 1,0)
+drinker_received_bi$practice <- ifelse(drinker_received_bi$alcbi25==
+                                         "Yes, a doctor or other health worker within my GP surgery offered help or support within the", 1,0)
+drinker_received_bi$referral <- ifelse(drinker_received_bi$alcbi26==
+                                        "Yes, a doctor or other health worker within my GP surgery referred me to an alcohol service or", 1,0)
+drinker_received_bi$n_types_bi <- rowSums(cbind(drinker_received_bi$advice, drinker_received_bi$practice, drinker_received_bi$referral)) 
+table(drinker_received_bi$n_types_bi)
+drinker_received_bi$more_than_1_bi <- ifelse(drinker_received_bi$n_types_bi >1, "yes", "no") %>% as.factor
+summary_stats(drinker_received_bi, "more_than_1_bi")
+## get cross tabulation for type 
+table(drinker_received_bi$advice, drinker_received_bi$practice, drinker_received_bi$referral)
+
+
+
+# interventions provided for smoking
+## reduce dataset to those who received smoking brief intervention
+smoker_received_bi <- complete_cases %>% filter(smokbi == "BI")
+summary_stats(smoker_received_bi, "q632x4a4") # Yes, he/she advised me to stop but did not offer anything
+summary_stats(smoker_received_bi, "q632x4a3") # Yes he/she offered me a prescription for Champix, Zyban, a nicotine patch, nicotine gum or another nicotine product
+summary_stats(smoker_received_bi, "q632x4a10") # Yes, he\she suggested that I use an e-cigarette
+summary_stats(smoker_received_bi, "q632x4a2") # Yes, he/she suggested that I see a nurse in the practice
+summary_stats(smoker_received_bi, "q632x4a1") # Yes, he/she suggested that I go to a specialist stop smoking advisor or group
+## how many people got more than one type of support
+smoker_received_bi$advice <- ifelse(smoker_received_bi$q632x4a4=="Yes, he/she advised me to stop but did not offer anything", 1,0)
+smoker_received_bi$med <- ifelse(smoker_received_bi$q632x4a3=="Yes, he/she offered me a prescription for Champix, Zyban, a", 1,0)
+smoker_received_bi$ecig <- ifelse(smoker_received_bi$q632x4a10=="Yes, he/she suggested that I see a nurse in the practice", 1,0)
+smoker_received_bi$nurse <- ifelse(smoker_received_bi$q632x4a2=="Yes, he/she suggested that I see a nurse in the practice", 1,0)
+smoker_received_bi$referral <- ifelse(smoker_received_bi$q632x4a1=="Yes, he/she suggested that I go to a specialist stop smoking", 1,0)
+smoker_received_bi$n_types_bi <- rowSums(cbind(smoker_received_bi$advice, smoker_received_bi$med, smoker_received_bi$ecig, smoker_received_bi$nurse,
+                                               smoker_received_bi$referral)) 
+table(smoker_received_bi$n_types_bi)
+smoker_received_bi$more_than_1_bi <- ifelse(smoker_received_bi$n_types_bi >1, "yes", "no") %>% as.factor
+summary_stats(smoker_received_bi, "more_than_1_bi")
+table(smoker_received_bi$referral, smoker_received_bi$advice)
+table(smoker_received_bi$med, smoker_received_bi$advice)
+table(smoker_received_bi$ecig, smoker_received_bi$advice)
+table(smoker_received_bi$nurse, smoker_received_bi$advice)
+```
+
 
 # create graph for article
 ```{r, include = TRUE}
@@ -651,7 +803,7 @@ p2 <- ggplot(data_plot_article, aes(x=nation, y=drinker, fill = nation)) +
   geom_bar(stat="identity", width= 0.6) +
   facet_wrap(~outcome) +
   geom_errorbar(aes(x=nation, ymin=drinker_lo_ci, ymax=drinker_up_ci, color=nation), width=0.2) +
-  geom_text(aes(label=drinker, x=nation, color=nation), position = position_stack(vjust = 5), size = 3, show.legend = FALSE) +
+  geom_text(aes(label=drinker, x=nation, color=nation), position = position_stack(vjust = 4), size = 3, show.legend = FALSE) +
   labs(y = "Prevalence (%)") +
   ylim(0,65) +
   theme(axis.text.x=element_blank(),
@@ -690,50 +842,78 @@ ggsave("figure1.3.article.png", plot = p3, height = 7 , width = 5)
 
 # Sensitivity analysis 2: prevalence, eligibility, and receipt, unweighted
 ```{r, include=TRUE}
-complete_cases$sexz <- ifelse(complete_cases$sexz == "Men", "Men", "Women")
-
 # values for drinking
-complete_cases_alc <- complete_cases %>% filter(alc_bi %in% c("advice", "no advice"))
-complete_cases_alc$alc_bi <- ifelse(complete_cases_alc$alc_bi == "advice", 1, 0)
+## get number and percentage of increasing/higher risk drinkers in Great Britain
 table(complete_cases$highriskauditc)
 prop.table(table(complete_cases$highriskauditc))
+## get number and percentage of increasing/higher risk drinkers by nation
 table(complete_cases$highriskauditc, complete_cases$gore1)
 prop.table(table(complete_cases$highriskauditc, complete_cases$gore1), margin =2)
-table(complete_cases[complete_cases$highriskauditc==1,]$alc_gp)
-prop.table(table(complete_cases[complete_cases$highriskauditc==1,]$alc_gp))
-table(complete_cases[complete_cases$highriskauditc==1,]$alc_gp, complete_cases[complete_cases$highriskauditc==1,]$gore1)
-prop.table(table(complete_cases[complete_cases$highriskauditc==1,]$alc_gp, complete_cases[complete_cases$highriskauditc==1,]$gore1), margin =2)
-table(complete_cases_alc$alc_bi)
-prop.table(table(complete_cases_alc$alc_bi))
-table(complete_cases_alc$alc_bi, complete_cases_alc$gore1)
-prop.table(table(complete_cases_alc$alc_bi, complete_cases_alc$gore1), margin =2)
-nrow(complete_cases_alc[complete_cases_alc$alc_bi==1,])/nrow(complete_cases[complete_cases$highriskauditc==1,])
-nrow(complete_cases_alc[complete_cases_alc$alc_bi==1 & !(complete_cases_alc$gore %in%  c("Wales", "Scotland")),])/nrow(complete_cases[complete_cases$highriskauditc==1 
-                                                                                                                                    & !(complete_cases$gore %in%  c("Wales", "Scotland")),])
-nrow(complete_cases_alc[complete_cases_alc$alc_bi==1 & complete_cases_alc$gore=="Scotland",])/nrow(complete_cases[complete_cases$highriskauditc==1 & complete_cases$gore=="Scotland",])
-nrow(complete_cases_alc[complete_cases_alc$alc_bi==1 & complete_cases_alc$gore=="Wales",])/nrow(complete_cases[complete_cases$highriskauditc==1 & complete_cases$gore=="Wales",])
+## reduce dataset to increasing/higher risk drinkers
+complete_cases_alc <- complete_cases %>% filter(alcbi %in% c("BI", "no BI", "not seen GP"))
+## change alcbi variable to state whether seen GP
+complete_cases_alc$gp <- ifelse(complete_cases_alc$alcbi == "not seen GP", 0, 1)
+## get number and percentage of increasing/high risk drinkers who visited their GP in Great Britain
+table(complete_cases_alc$gp)
+prop.table(table(complete_cases_alc$gp))
+## get number and percentage of increasing/high risk drinkers who visited their GP by nation
+table(complete_cases_alc$gp, complete_cases_alc$gore1)
+prop.table(table(complete_cases_alc$gp, complete_cases_alc$gore1), margin =2)
+## reduce dataset to only include increasing/higher risk drinkers who visited their GP
+complete_cases_alc_gp <- complete_cases %>% filter(alcbi %in% c("BI", "no BI"))
+## change variable levels into 1 for received brief intervention and 0 for no brief intervention
+complete_cases_alc_gp$alcbi <- ifelse(complete_cases_alc_gp$alcbi == "BI", 1, 0)
+## get number and percentage of increasing/high risk drinkers who visited their GP and received brief intervention in Great Britain
+table(complete_cases_alc_gp$alcbi)
+prop.table(table(complete_cases_alc_gp$alcbi))
+## get number and percentage of increasing/high risk drinkers who visited their GP and received brief intervention by nation
+table(complete_cases_alc_gp$alcbi, complete_cases_alc_gp$gore1)
+prop.table(table(complete_cases_alc_gp$alcbi, complete_cases_alc_gp$gore1), margin =2)
+## make alcbi variable binary to show 1 if received brief intervention and else 0
+complete_cases_alc$alcbi_binary <- ifelse(complete_cases_alc$alcbi == "BI", 1, 0)
+## get number and percentage of increasing/high risk drinkers who received brief intervention in Great Britain
+table(complete_cases_alc$alcbi_binary)
+prop.table(table(complete_cases_alc$alcbi_binary))
+## get number and percentage of increasing/high risk drinkers who received brief intervention by nation
+table(complete_cases_alc$alcbi_binary, complete_cases_alc$gore1)
+prop.table(table(complete_cases_alc$alcbi_binary, complete_cases_alc$gore1), margin =2)
 
 
 # values for smoking
-complete_cases_smok <- complete_cases %>% filter(smok_bi %in% c("advice", "no advice"))
-complete_cases_smok$smok_bi <- ifelse(complete_cases_smok$smok_bi == "advice", 1, 0)
+## get number and percentage of past-year smokers in Great Britain
 table(complete_cases$smokly)
 prop.table(table(complete_cases$smokly))
+## get number and percentage of past-year smokers by nation
 table(complete_cases$smokly, complete_cases$gore1)
 prop.table(table(complete_cases$smokly, complete_cases$gore1), margin =2)
-table(complete_cases[complete_cases$smokly==1,]$smok_gp)
-prop.table(table(complete_cases[complete_cases$smokly==1,]$smok_gp))
-table(complete_cases[complete_cases$smokly==1,]$smok_gp, complete_cases[complete_cases$smokly==1,]$gore1)
-prop.table(table(complete_cases[complete_cases$smokly==1,]$smok_gp, complete_cases[complete_cases$smokly==1,]$gore1), margin =2)
-table(complete_cases_smok$smok_bi)
-prop.table(table(complete_cases_smok$smok_bi))
-table(complete_cases_smok$smok_bi, complete_cases_smok$gore1)
-prop.table(table(complete_cases_smok$smok_bi, complete_cases_smok$gore1), margin =2)
-nrow(complete_cases_smok[complete_cases_smok$smok_bi==1,])/nrow(complete_cases[complete_cases$smokly==1,])
-nrow(complete_cases_smok[complete_cases_smok$smok_bi==1 & !(complete_cases_smok$gore %in%  c("Wales", "Scotland")),])/nrow(complete_cases[complete_cases$smokly==1 
-                                                                                                                                    & !(complete_cases$gore %in%  c("Wales", "Scotland")),])
-nrow(complete_cases_smok[complete_cases_smok$smok_bi==1 & complete_cases_smok$gore=="Scotland",])/nrow(complete_cases[complete_cases$smokly==1 & complete_cases$gore=="Scotland",])
-nrow(complete_cases_smok[complete_cases_smok$smok_bi==1 & complete_cases_smok$gore=="Wales",])/nrow(complete_cases[complete_cases$smokly==1 & complete_cases$gore=="Wales",])
+## reduce dataset to only past-year smokers
+complete_cases_smok <- complete_cases %>% filter(smokbi %in% c("BI", "no BI", "not seen GP"))
+## change smokbi variable to state whether seen GP
+complete_cases_smok$gp <- ifelse(complete_cases_smok$smokbi == "not seen GP", 0, 1)
+## get number and percentage of past-year smokers who visited their GP in Great Britain
+table(complete_cases_smok$gp)
+prop.table(table(complete_cases_smok$gp))
+## get number and percentage of past-year smokers who visited their GP by nation
+table(complete_cases_smok$gp, complete_cases_smok$gore1)
+prop.table(table(complete_cases_smok$gp, complete_cases_smok$gore1), margin =2)
+## reduce dataset to only include past-year smokers who visited their GP
+complete_cases_smok_gp <- complete_cases %>% filter(smokbi %in% c("BI", "no BI"))
+## change variable levels into 1 for received brief intervention and 0 for no brief intervention
+complete_cases_smok_gp$smokbi <- ifelse(complete_cases_smok_gp$smokbi == "BI", 1, 0)
+## get number and percentage of past-year smokers who visited their GP and received brief intervention in Great Britain
+table(complete_cases_smok_gp$smokbi)
+prop.table(table(complete_cases_smok_gp$smokbi))
+## get number and percentage of past-year smokers who visited their GP and received brief intervention by nation
+table(complete_cases_smok_gp$smokbi, complete_cases_smok_gp$gore1)
+prop.table(table(complete_cases_smok_gp$smokbi, complete_cases_smok_gp$gore1), margin =2)
+## make smokbi variable binary to show 1 if received brief intervention and else 0
+complete_cases_smok$smokbi_binary <- ifelse(complete_cases_smok$smokbi == "BI", 1, 0)
+## get number and percentage of past-year smokers who received brief intervention in Great Britain
+table(complete_cases_smok$smokbi_binary)
+prop.table(table(complete_cases_smok$smokbi_binary))
+## get number and percentage of past-year smokers who received brief intervention by nation
+table(complete_cases_smok$smokbi_binary, complete_cases_smok$gore1)
+prop.table(table(complete_cases_smok$smokbi_binary, complete_cases_smok$gore1), margin =2)
 ```
 
 ## adjusted and unadjusted analysis to check association between receipt of brief intervention and social grade
@@ -747,25 +927,22 @@ df_or$reference <- c(rep("ABC1, England", 2), rep("ABC1", 2), rep("ABC1, England
 df_or$OR <- round(df_or$OR,2)
 df_or$lower_ci <- round(df_or$lower_ci,2)
 df_or$upper_ci <- round(df_or$upper_ci,2)
-df_or$CI <- paste(df_or$lower_ci, df_or$upper_ci, sep="-") 
 
 # alcohol brief intervention
+## only include men and women in analysis 
+complete_cases_alc_gp <- complete_cases_alc_gp %>% filter(sexz %in% c("Men", "Women"))
 ## unadjusted logistic regression, alcohol brief intervention, unweighted
-oddsratio(table(complete_cases_alc$alc_bi, complete_cases_alc$sgz1))
-fit <- glm(alc_bi ~ sgz1, data = complete_cases_alc, family=binomial)
-exp(cbind(coef(fit), confint(fit)))
+fit <- glm(alcbi ~ sgz1, data = complete_cases_alc_gp, family=binomial)
 df_or$OR[8] <- exp(coef(fit)[2])
 df_or$lower_ci[8] <- exp(confint(fit)[2,1])
 df_or$upper_ci[8] <- exp(confint(fit)[2,2])
 ## adjusted logistic regression, alcohol brief intervention, unweighted
-fit <- glm(alc_bi ~ sgz1 + agez + sexz + gore1 + dethnin + auditc + smokly, data = complete_cases_alc, family=binomial)
-exp(cbind(coef(fit), confint(fit)))
+fit <- glm(alcbi ~ sgz1 + agez + sexz + gore1 + dethnin + auditc + smokly, data = complete_cases_alc_gp, family=binomial)
 df_or$OR[7] <- exp(coef(fit)[2])
 df_or$lower_ci[7] <- exp(confint(fit)[2,1])
 df_or$upper_ci[7] <- exp(confint(fit)[2,2])
-## adjusted logistic regression, alcohol brief intervention, unweighted
-fit <- glm(alc_bi ~ sgz1 + agez + sexz + gore1 + gore1*sgz1 + dethnin + auditc + smokly, data = complete_cases_alc, family=binomial)
-exp(cbind(coef(fit), confint(fit)))
+## adjusted logistic regression with interaction term, alcohol brief intervention, unweighted
+fit <- glm(alcbi ~ sgz1 + agez + sexz + gore1 + gore1*sgz1 + dethnin + auditc + smokly, data = complete_cases_alc_gp, family=binomial)
 df_or$OR[6] <- exp(coef(fit)[(length(fit$coefficients)-1)])
 df_or$lower_ci[6] <- exp(confint(fit)[(length(fit$coefficients)-1),1])
 df_or$upper_ci[6] <- exp(confint(fit)[(length(fit$coefficients)-1),2])
@@ -774,28 +951,42 @@ df_or$lower_ci[5] <- exp(confint(fit)[length(fit$coefficients),1])
 df_or$upper_ci[5] <- exp(confint(fit)[length(fit$coefficients),2])
 
 # smoking brief intervention
+## only include men and women in analysis 
+complete_cases_smok_gp <- complete_cases_smok_gp %>% filter(sexz %in% c("Men", "Women"))
 ## unadjusted logistic regression, smoking brief intervention, unweighted
-oddsratio(table(complete_cases_smok$smok_bi, complete_cases_smok$sgz1))
-fit <- glm(smok_bi ~ sgz1, data = complete_cases_smok, family=binomial)
-exp(cbind(coef(fit), confint(fit)))
+fit <- glm(smokbi ~ sgz1, data = complete_cases_smok_gp, family=binomial)
 df_or$OR[4] <- exp(coef(fit)[2])
 df_or$lower_ci[4] <- exp(confint(fit)[2,1])
 df_or$upper_ci[4] <- exp(confint(fit)[2,2])
 ## adjusted logistic regression, smoking brief intervention, unweighted
-fit <- glm(smok_bi ~ sgz1 + agez + sexz + gore1 + dethnin + highriskauditc + sturge, data = complete_cases_smok, family=binomial)
-exp(cbind(coef(fit), confint(fit)))
+fit <- glm(smokbi ~ sgz1 + agez + sexz + gore1 + dethnin + highriskauditc + sturge, data = complete_cases_smok_gp, family=binomial)
 df_or$OR[3] <- exp(coef(fit)[2])
 df_or$lower_ci[3] <- exp(confint(fit)[2,1])
 df_or$upper_ci[3] <- exp(confint(fit)[2,2])
-## adjusted logistic regression, alcohol brief intervention, unweighted
-fit <- glm(smok_bi ~ sgz1 + agez + sexz + gore1 + gore1*sgz1 + dethnin + highriskauditc + sturge, data = complete_cases_smok, family=binomial)
-exp(cbind(coef(fit), confint(fit)))
+## adjusted logistic regression with interaction term, smoking brief intervention, unweighted
+fit <- glm(smokbi ~ sgz1 + agez + sexz + gore1 + gore1*sgz1 + dethnin + highriskauditc + sturge, data = complete_cases_smok_gp, family=binomial)
 df_or$OR[2] <- exp(coef(fit)[(length(fit$coefficients)-1)])
 df_or$lower_ci[2] <- exp(confint(fit)[(length(fit$coefficients)-1),1])
 df_or$upper_ci[2] <- exp(confint(fit)[(length(fit$coefficients)-1),2])
 df_or$OR[1] <- exp(coef(fit)[length(fit$coefficients)])
 df_or$lower_ci[1] <- exp(confint(fit)[length(fit$coefficients),1])
 df_or$upper_ci[1] <- exp(confint(fit)[length(fit$coefficients),2])
+
+## get confidence interval in one column
+df_or$CI <- paste(round(df_or$lower_ci,2), round(df_or$upper_ci,2), sep="-") 
+## print table
+df_or
+## table to see absolute values by social grade for alcohol brief interventions
+table(complete_cases_alc_gp$alcbi, complete_cases_alc_gp$sgz1)
+table(complete_cases_alc_gp$sgz1)
+## get unweighted prevalence by social grade for alcohol brief interventions
+prop.table(table(complete_cases_alc_gp$alcbi, complete_cases_alc_gp$sgz1), margin = 2)
+
+## table to see absolute values by social grade for smoking brief interventions
+table(complete_cases_smok_gp$smokbi, complete_cases_smok_gp$sgz1)
+table(complete_cases_smok_gp$sgz1)
+## get unweighted prevalence by social grade for smoking brief interventions
+prop.table(table(complete_cases_smok_gp$smokbi, complete_cases_smok_gp$sgz1), margin = 2)
 ```
 
 # odds ratio graph for paper
@@ -805,7 +996,7 @@ plot_or <- ggplot(df_or, aes(x=OR, y=index, xmin=lower_ci, xmax=upper_ci)) +
   geom_point() +
   geom_errorbarh(height=.1) +
   scale_y_continuous(name="", breaks=1:nrow(df_or), labels=df_or$analysis) +
-  labs(x='Odds ratios (log scale)') +
+  labs(x='Odds ratios (log scale)', title="") +
   geom_vline(xintercept=1, color='black', alpha=.5) +
   theme(axis.line.x = element_line(colour = "black"),
         axis.line.y = element_line(colour = "black"),
@@ -816,7 +1007,7 @@ plot_or <- ggplot(df_or, aes(x=OR, y=index, xmin=lower_ci, xmax=upper_ci)) +
 table_base <- ggplot(df_or, aes(y=analysis)) +
   ylab(NULL) + xlab("  ") + 
   theme(plot.title = element_text(hjust = 0.5, size=11), 
-        axis.text.x = element_text(color="white", hjust = -3, size = 30), ## This is used to help with alignment
+        axis.text.x = element_text(color="white", hjust = -3, size = 21), ## This is used to help with alignment
         axis.line = element_blank(),
         axis.text.y = element_blank(), 
         axis.ticks = element_blank(),
@@ -848,7 +1039,7 @@ tab3 <- table_base +
   theme(plot.title = element_text(size=11))
 
 ## Merge tables with plot
-lay <-  matrix(c(1,1,1,1,1,1,1,1,1,1,2,3,3,4,4,4), nrow = 1)
+lay <-  matrix(c(1,1,1,1,1,1,1,1,1,1,2,3,3,4,4,4,4), nrow = 1)
 plot_or_final <- grid.arrange(plot_or, tab1, tab2, tab3, layout_matrix = lay)
 
 ggsave("figure2.png", plot = plot_or_final, height = 7 , width = 10)
@@ -858,50 +1049,45 @@ ggsave("figure2.png", plot = plot_or_final, height = 7 , width = 10)
 ```{r, include=TRUE}
 # alcohol brief intervention
 ## unadjusted logistic regression, alcohol brief intervention, weighted
-complete_cases$sexz <- ifelse(complete_cases$sexz == "Men", "Men", "Women")
-complete_cases$sgz1 <- ifelse(complete_cases$sgz %in% c("AB", "C1"), "ABC1", "C2DE")
-complete_cases$gore1 <- ifelse(complete_cases$gore == "Wales", "Wales",
-                               ifelse(complete_cases$gore == "Scotland", "Scotland", "England"))
-complete_cases_alc <- complete_cases %>% filter(alc_bi %in% c("advice", "no advice"))
-complete_cases_alc$alc_bi <- ifelse(complete_cases_alc$alc_bi == "advice", 1, 0)
-fit <- glm(alc_bi ~ sgz1, data = complete_cases_alc, weights = weight_gb, family=quasibinomial)
+fit <- glm(alcbi ~ sgz1, data = complete_cases_alc_gp, weights = weight_gb, family=quasibinomial)
 exp(cbind(coef(fit), confint(fit)))
 ## adjusted logistic regression, alcohol brief intervention, weighted
-fit <- glm(alc_bi ~ sgz1 + agez + sexz + dethnin + gore1 + auditc + smokly, data = complete_cases_alc, weights = weight_gb, family=quasibinomial)
+fit <- glm(alcbi ~ sgz1 + agez + sexz + dethnin + gore1 + auditc + smokly, data = complete_cases_alc_gp, weights = weight_gb, family=quasibinomial)
 exp(cbind(coef(fit), confint(fit)))
-## adjusted logistic regression, alcohol brief intervention, weighted
-fit <- glm(alc_bi ~ sgz1 + agez + sexz + dethnin + gore1 + gore1*sgz1 + auditc + smokly, data = complete_cases_alc, weights = weight_gb, family=quasibinomial)
+## adjusted logistic regression with interaction term, alcohol brief intervention, weighted
+fit <- glm(alcbi ~ sgz1 + agez + sexz + dethnin + gore1 + gore1*sgz1 + auditc + smokly, data = complete_cases_alc_gp, weights = weight_gb,
+           family=quasibinomial)
 exp(cbind(coef(fit), confint(fit)))
 
 # smoking brief intervention
 ## unadjusted logistic regression, smoking brief intervention, weighted
-complete_cases_smok <- complete_cases %>% filter(smok_bi %in% c("advice", "no advice"))
-complete_cases_smok$smok_bi <- ifelse(complete_cases_smok$smok_bi == "advice", 1, 0)
-fit <- glm(smok_bi ~ sgz1, data = complete_cases_smok, weights = weight_gb, family=quasibinomial)
+fit <- glm(smokbi ~ sgz1, data = complete_cases_smok_gp, weights = weight_gb, family=quasibinomial)
 exp(cbind(coef(fit), confint(fit)))
 ## adjusted logistic regression, smoking brief intervention, weighted
-fit <- glm(smok_bi ~ sgz1 + agez + sexz + dethnin + gore1 + highriskauditc + sturge, data = complete_cases_smok, weights = weight_gb, family=quasibinomial)
+fit <- glm(smokbi ~ sgz1 + agez + sexz + dethnin + gore1 + highriskauditc + sturge, data = complete_cases_smok_gp, weights = weight_gb,
+           family=quasibinomial)
 exp(cbind(coef(fit), confint(fit)))
-## adjusted logistic regression, alcohol brief intervention, weighted
-fit <- glm(smok_bi ~ sgz1 + agez + sexz + dethnin + gore1 + gore1*sgz1 + highriskauditc + sturge, data = complete_cases_smok, weights = weight_gb, family=quasibinomial)
+## adjusted logistic regression with interaction term, alcohol brief intervention, weighted
+fit <- glm(smokbi ~ sgz1 + agez + sexz + dethnin + gore1 + gore1*sgz1 + highriskauditc + sturge, data = complete_cases_smok_gp, weights = weight_gb, family=quasibinomial)
 exp(cbind(coef(fit), confint(fit)))
 ```
 
 # Sensitivity analysis 4: Social grade in 5 categories
 ```{r, include=TRUE}
-table(complete_cases_alc$alc_bi, complete_cases_alc$sgz)
-fit <- glm(alc_bi ~ sgz, data = complete_cases_alc, family=binomial)
+# alcohol brief intervention
+## fit logistic regression with sgz instead of sgz1, unajdusted, unweighted
+fit <- glm(alcbi ~ sgz, data = complete_cases_alc_gp, family=binomial)
 exp(cbind(coef(fit), confint(fit)))
 ## adjusted logistic regression, alcohol brief intervention, unweighted
-fit <- glm(alc_bi ~ sgz + agez + sexz + dethnin + gore1 + auditc + smokly, data = complete_cases_alc, family=binomial)
+fit <- glm(alcbi ~ sgz + agez + sexz + dethnin + gore1 + auditc + smokly, data = complete_cases_alc_gp, family=binomial)
 exp(cbind(coef(fit), confint(fit)))
 
 # smoking brief intervention
-## unadjusted logistic regression, smoking brief intervention, unweighted
-fit <- glm(smok_bi ~ sgz, data = complete_cases_smok, family=binomial)
+## fit logistic regression with sgz instead of sgz1, unajdusted, unweighted
+fit <- glm(smokbi ~ sgz, data = complete_cases_smok_gp, family=binomial)
 exp(cbind(coef(fit), confint(fit)))
 ## adjusted logistic regression, smoking brief intervention, unweighted
-fit <- glm(smok_bi ~ sgz + agez + sexz + dethnin + gore1 + highriskauditc + sturge, data = complete_cases_smok, family=binomial)
+fit <- glm(smokbi ~ sgz + agez + sexz + dethnin + gore1 + highriskauditc + sturge, data = complete_cases_smok_gp, family=binomial)
 exp(cbind(coef(fit), confint(fit)))
 ```
 
@@ -911,21 +1097,21 @@ exp(cbind(coef(fit), confint(fit)))
 # Central: East Midlands, West Midlands, and East of England
 # South: London, South East, South West
 # alcohol brief intervention
-complete_cases_alc$gore2 <- ifelse(complete_cases_alc$gore == "Wales", "Wales",
-                                   ifelse(complete_cases_alc$gore == "Scotland", "Scotland",
-                                          ifelse(complete_cases_alc$gore %in% c("East Midlands", "West Midlands", "East of England"), "North",
-                                                 ifelse(complete_cases_alc$gore %in% c("London", "South East", "South West"), "Central", "South"))))
+complete_cases_alc_gp$gore2 <- ifelse(complete_cases_alc_gp$gore == "Wales", "Wales",
+                                   ifelse(complete_cases_alc_gp$gore == "Scotland", "Scotland",
+                                          ifelse(complete_cases_alc_gp$gore %in% c("East Midlands", "West Midlands", "East of England"), "North",
+                                                 ifelse(complete_cases_alc_gp$gore %in% c("London", "South East", "South West"), "Central", "South"))))
 ## adjusted logistic regression, alcohol brief intervention, unweighted
-fit <- glm(alc_bi ~ sgz1 + agez + sexz + dethnin + gore2 + auditc + smokly + gore2*sgz1, data = complete_cases_alc, family=binomial)
+fit <- glm(alcbi ~ sgz1 + agez + sexz + dethnin + gore2 + auditc + smokly + gore2*sgz1, data = complete_cases_alc_gp, family=binomial)
 exp(cbind(coef(fit), confint(fit)))
 
 # smoking brief intervention
-complete_cases_smok$gore2 <- ifelse(complete_cases_smok$gore == "Wales", "Wales",
-                                   ifelse(complete_cases_smok$gore == "Scotland", "Scotland",
-                                          ifelse(complete_cases_smok$gore %in% c("East Midlands", "West Midlands", "East of England"), "North",
-                                                 ifelse(complete_cases_smok$gore %in% c("London", "South East", "South West"), "Central", "South"))))
+complete_cases_smok_gp$gore2 <- ifelse(complete_cases_smok_gp$gore == "Wales", "Wales",
+                                   ifelse(complete_cases_smok_gp$gore == "Scotland", "Scotland",
+                                          ifelse(complete_cases_smok_gp$gore %in% c("East Midlands", "West Midlands", "East of England"), "North",
+                                                 ifelse(complete_cases_smok_gp$gore %in% c("London", "South East", "South West"), "Central", "South"))))
 ## adjusted logistic regression, smoking brief intervention, unweighted
-fit <- glm(smok_bi ~ sgz1 + agez + sexz + dethnin + gore2 + highriskauditc + sturge + gore2*sgz1, data = complete_cases_smok, family=binomial)
+fit <- glm(smokbi ~ sgz1 + agez + sexz + dethnin + gore2 + highriskauditc + sturge + gore2*sgz1, data = complete_cases_smok_gp, family=binomial)
 exp(cbind(coef(fit), confint(fit)))
 ```
 
